@@ -3,7 +3,7 @@ import ReactPlayer from "react-player/vimeo";
 import './App.css';
 import VimeoPlayer, {VimeoPlayerProps} from "react-player/types/vimeo";
 import PlayerControllers from "./PlayerControllers";
-import {Box, Button, Slider} from "@mui/material";
+import {Box, Button} from "@mui/material";
 import Duration from "./Duration";
 
 function App() {
@@ -12,36 +12,12 @@ function App() {
 
     //some values of player
     let duration = ReactPlayerRef.current ? ReactPlayerRef.current.getDuration() : null;
+
     function seekTo(seconds: number) {
         if (ReactPlayerRef.current) {
             ReactPlayerRef.current.seekTo(seconds, "seconds");
         }
     }
-
-    //state for seeking
-    // const [seeking, setSeeking] = useState<boolean>(false);
-    //
-    // function handleSeekMouseDown(e: React.MouseEventHandler) {
-    //     setSeeking(true);
-    // }
-
-    // function handleSeekChange(e: React.MouseEventHandler) {
-    //     this.setState({ played: parseFloat(e.target.value) })
-    // }
-
-    // function handleSeekMouseUp(e: React.MouseEventHandler<HTMLSpanElement>) {
-    //     setSeeking(false);
-    //     seekTo(0);
-    //     this.player.seekTo(parseFloat(e.target.value))
-    // }
-    //
-    // function handleProgress (e: React.MouseEventHandler) {
-    //     console.log('onProgress', state)
-    //     // We only want to update time slider if we are not currently seeking
-    //     if (!this.state.seeking) {
-    //         this.setState(state)
-    //     }
-    // }
 
     //player state
     const [reactPlayerState, setReactPlayerState] = useState<VimeoPlayerProps>({
@@ -50,7 +26,7 @@ function App() {
         playing: false,
         controls: true,
         light: false,
-        volume: 0.8,
+        volume: 0.5,
         muted: false,
         played: 0,
         loaded: 0,
@@ -80,7 +56,14 @@ function App() {
         onProgress: state => {
             console.log('on progress called');
             setTimelineState({...state});
+            setSeekingCallback(false);
         },
+    }
+
+    //seeking state
+    const [seeking, setSeeking] = useState<boolean>(false);
+    function setSeekingCallback(value: boolean) {
+        setSeeking(value);
     }
 
     //player control handlers
@@ -93,20 +76,31 @@ function App() {
         )
     }
 
+    //player state change handler
+    function playerStateChangeHandler(newState: VimeoPlayerProps){
+        setReactPlayerState(prevState => {
+            return {...prevState, ...newState}
+        })
+    }
+
     return (
         <div className="App">
             <ReactPlayer
                 ref={ReactPlayerRef}
                 {...reactPlayerState}
                 {...PlayerCallbacks}
-                onPause={()=>console.log('pause')}
+                onPause={() => console.log('pause')}
             />
             <PlayerControllers
                 reactPlayerState={reactPlayerState}
+                playerStateChangeHandler={playerStateChangeHandler}
                 playPauseHandle={playPauseHandle}
                 duration={duration || 0}
                 currentTime={timelineState.playedSeconds}
                 seekTo={seekTo}
+                seeking={seeking}
+                setSeekingCallback={setSeekingCallback}
+
             />
             <Box>
                 <div>
@@ -122,14 +116,7 @@ function App() {
                     />
                 </div>
                 <div>
-                    <span>Played: {}</span>
-                </div>
-                <div>
-                    <Button
-                        onClick={() => {
-                            seekTo(10)
-                        }}
-                    >To 10</Button>
+                    <span>Volume: {reactPlayerState.volume}</span>
                 </div>
             </Box>
         </div>

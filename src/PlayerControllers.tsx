@@ -1,16 +1,19 @@
-import React, {useState} from 'react';
-import {Box, Button, Grid, IconButton, Slider} from "@mui/material";
+import React, {useRef, useState} from 'react';
+import {Box, Button, Grid, IconButton, Slider, SliderTypeMap} from "@mui/material";
 import PlayArrow from '@mui/icons-material/PlayArrow';
 import {VimeoPlayerProps} from "react-player/types/vimeo";
-import {Pause} from "@mui/icons-material";
+import {Pause, VolumeOff, VolumeUp} from "@mui/icons-material";
 import {format} from "./Duration";
 
 type PlayerControl = {
     reactPlayerState: VimeoPlayerProps
+    playerStateChangeHandler: (newState: VimeoPlayerProps) => void
     playPauseHandle: () => void
     duration: number
     currentTime: number
     seekTo: (seconds: number) => void
+    seeking: boolean
+    setSeekingCallback: (value: boolean) => void
 }
 
 const PlayerControllers = (props: PlayerControl) => {
@@ -18,15 +21,34 @@ const PlayerControllers = (props: PlayerControl) => {
         return format(duration).toString()
     }
 
-    //state for seeking
-    const [seeking, setSeeking] = useState<boolean>(false);
+    //volume
+    const volume = props.reactPlayerState.volume ? props.reactPlayerState.volume : 0.5;
+    //
+
+    //target time state
     const [targetTime, setTargetTime] = useState<number>(0);
 
-    function onMouseDownHandler () {
+    //time seek functions
+    function onMouseDownHandler() {
         console.log('seeking');
-        setSeeking(true);
+        props.setSeekingCallback(true);
     }
 
+    function handleSeekChange(event: Event, value: number | number[], activeThumb: number) {
+        console.log('change slider value');
+        if (!Array.isArray(value)) {
+            setTargetTime(value);
+        };
+    }
+
+    function onMouseUpHandler() {
+        console.log('seeking done');
+        props.seekTo(targetTime);
+    }
+
+    function volumeMuteUnmute() {
+        props.playerStateChangeHandler({muted: !props.reactPlayerState.muted});
+    }
     return (
         <Box sx={{width: '800px', margin: '0 auto'}}>
             {/*Time track*/}
@@ -36,19 +58,11 @@ const PlayerControllers = (props: PlayerControl) => {
             >
                 <Slider
                     onMouseDown={onMouseDownHandler}
-                    onChange={(event, value, activeThumb) => {
-                        console.log('change slider value');
-                        if (!Array.isArray(value))
-                        setTargetTime(value);
-                    }}
-                    onMouseUp={() =>{
-                        console.log('seeking done');
-                        setSeeking(false);
-                        props.seekTo(targetTime);
-                    }}
+                    onChange={handleSeekChange}
+                    onMouseUp={onMouseUpHandler}
                     min={0}
                     max={props.duration}
-                    value={seeking ? targetTime : props.currentTime}
+                    value={props.seeking ? targetTime : props.currentTime}
                     defaultValue={0}
                     aria-label="Default"
                     valueLabelDisplay="auto"
@@ -67,7 +81,26 @@ const PlayerControllers = (props: PlayerControl) => {
                     </IconButton>
                 </Grid>
                 <Grid item md={1}>
-
+                    <IconButton
+                        aria-label="forvard"
+                        color="primary"
+                        onClick={volumeMuteUnmute}
+                    >
+                        {props.reactPlayerState.muted ? <VolumeOff/> : <VolumeUp/>}
+                    </IconButton>
+                </Grid>
+                <Grid item md={2}>
+                    <Slider
+                        size={'small'}
+                        min={0}
+                        max={100}
+                        value={props.reactPlayerState.muted ? 0 : volume * 100}
+                        // onChange={onVolumeChange}
+                        // aria-labelledby="input-slider"
+                        // className={classes.volumeSlider}
+                        // onMouseDown={onSeekMouseDown}
+                        // onChangeCommitted={onVolumeSeekDown}
+                    />
                 </Grid>
             </Grid>
         </Box>
