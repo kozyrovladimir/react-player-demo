@@ -22,8 +22,40 @@ const PlayerControllers = (props: PlayerControl) => {
     }
 
     //volume
-    const volume = props.reactPlayerState.volume ? props.reactPlayerState.volume : 0.5;
-    //
+    const volume = (() => {
+        let localVolume;
+        if(props.reactPlayerState.volume) {
+            localVolume = props.reactPlayerState.volume;
+        } else {
+            localVolume = 0.5;
+        };
+        if (props.reactPlayerState.muted) {
+            localVolume = 0;
+        };
+        return localVolume * 100;
+    })();
+    //volume change props
+    const [targetVolume, setTargetVolume] = useState<number>(0);
+    const [volumeIsChanging, setVolumeIsChanging] = useState<boolean>(false);
+
+    function onMouseDownVolumeHandler() {
+        console.log('changing volume');
+        setVolumeIsChanging(true);
+    }
+
+    function handleVolumeChange(event: Event, value: number | number[], activeThumb: number) {
+        console.log('change volume value');
+        if (!Array.isArray(value)) {
+            setTargetVolume(value);
+        }
+        ;
+    }
+
+    function onMouseUpVolumeHandler() {
+        console.log('changing volume done');
+        props.playerStateChangeHandler({volume: targetVolume/100});
+        setVolumeIsChanging(false);
+    }
 
     //target time state
     const [targetTime, setTargetTime] = useState<number>(0);
@@ -38,7 +70,8 @@ const PlayerControllers = (props: PlayerControl) => {
         console.log('change slider value');
         if (!Array.isArray(value)) {
             setTargetTime(value);
-        };
+        }
+        ;
     }
 
     function onMouseUpHandler() {
@@ -49,6 +82,7 @@ const PlayerControllers = (props: PlayerControl) => {
     function volumeMuteUnmute() {
         props.playerStateChangeHandler({muted: !props.reactPlayerState.muted});
     }
+
     return (
         <Box sx={{width: '800px', margin: '0 auto'}}>
             {/*Time track*/}
@@ -94,12 +128,12 @@ const PlayerControllers = (props: PlayerControl) => {
                         size={'small'}
                         min={0}
                         max={100}
-                        value={props.reactPlayerState.muted ? 0 : volume * 100}
-                        // onChange={onVolumeChange}
-                        // aria-labelledby="input-slider"
-                        // className={classes.volumeSlider}
-                        // onMouseDown={onSeekMouseDown}
-                        // onChangeCommitted={onVolumeSeekDown}
+                        value={volumeIsChanging ? targetVolume : volume}
+                        onChange={handleVolumeChange}
+                        onMouseDown={onMouseDownVolumeHandler}
+                        onMouseUp={onMouseUpVolumeHandler}
+                        // getAriaValueText={() => volume.toString()}
+                        // valueLabelFormat={() => volume.toString()}
                     />
                 </Grid>
             </Grid>
